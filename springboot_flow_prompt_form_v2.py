@@ -1,4 +1,7 @@
 
+import json
+import os
+
 print("""
 ────────────────────────────────────────────────────────────────────────────
 🧠 Spring Boot Flow Documentation Helper
@@ -15,6 +18,7 @@ confidently during meetings or code reviews.
 - Answer each question to the best of your knowledge.
 - You can enter multiple bullet points. Press ENTER after each line.
 - Type 'done' on a new line when you're finished with a question.
+- Type 'pause' at any time to save your progress and exit.
 - Navigation:
   <     → Go to the previous question
   >     → Skip the current question
@@ -24,10 +28,30 @@ Let's get started!
 ────────────────────────────────────────────────────────────────────────────
 """)
 
-# Prompt for custom file name
-filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
-if not filename.endswith(".txt"):
-    filename += ".txt"
+SESSION_FILE = "flow_progress.json"
+
+# Resume previous session if available
+if os.path.exists(SESSION_FILE):
+    resume = input("A saved session was found. Resume previous session? (y/n): ").strip().lower()
+    if resume == "y":
+        with open(SESSION_FILE, "r", encoding="utf-8") as f:
+            session_data = json.load(f)
+        filename = session_data["filename"]
+        index = session_data["index"]
+        answers = session_data["answers"]
+    else:
+        os.remove(SESSION_FILE)
+        filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
+        if not filename.endswith(".txt"):
+            filename += ".txt"
+        index = 0
+        answers = []
+else:
+    filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
+    if not filename.endswith(".txt"):
+        filename += ".txt"
+    index = 0
+    answers = []
 
 form_structure = {
     "Core Business Logic": [
@@ -57,15 +81,16 @@ form_structure = {
     ]
 }
 
-# Flatten list of questions with references to their section
 flat_questions = []
 for section, qs in form_structure.items():
     for q in qs:
         flat_questions.append((section, q))
 
-# Initialize answer storage
-answers = [[] for _ in flat_questions]
-index = 0
+# Initialize answer storage if starting fresh
+if not answers:
+    answers = [[] for _ in flat_questions]
+elif len(answers) < len(flat_questions):
+    answers += [[] for _ in range(len(flat_questions) - len(answers))]
 
 # Loop through questions
 while index < len(flat_questions):
@@ -76,7 +101,7 @@ while index < len(flat_questions):
         print("Current Answers:")
         for line in answers[index]:
             print(f"  - {line}")
-    print("Enter each line of your answer. Type 'done' to finish. '<', '>', or 'd' for navigation.")
+    print("Enter each line of your answer. Type 'done' to finish. '<', '>', 'd', or 'pause' to control navigation.")
     
     input_lines = []
     while True:
@@ -90,6 +115,16 @@ while index < len(flat_questions):
         elif line.lower() == "d":
             index = len(flat_questions)
             break
+        elif line.lower() == "pause":
+            session_data = {
+                "filename": filename,
+                "index": index,
+                "answers": answers
+            }
+            with open(SESSION_FILE, "w", encoding="utf-8") as f:
+                json.dump(session_data, f, indent=2)
+            print(f"Session saved. You can resume later by running this script again.")
+            exit(0)
         elif line.lower() == "done":
             answers[index] = input_lines
             index += 1
@@ -114,6 +149,10 @@ for (section, question), answer_lines in zip(flat_questions, answers):
 # Save to text file
 with open(filename, "w", encoding="utf-8") as f:
     f.write(output)
+
+# Clean up session file
+if os.path.exists(SESSION_FILE):
+    os.remove(SESSION_FILE)
 
 # Print final result
 print("\nCompleted Documentation:")

@@ -13,6 +13,8 @@ confidently during meetings or code reviews.
 
 🟢 Instructions:
 - Answer each question to the best of your knowledge.
+- You can enter multiple bullet points. Press ENTER after each line.
+- Type 'done' on a new line when you're finished with a question.
 - Navigation:
   <     → Go to the previous question
   >     → Skip the current question
@@ -62,7 +64,7 @@ for section, qs in form_structure.items():
         flat_questions.append((section, q))
 
 # Initialize answer storage
-answers = ["" for _ in flat_questions]
+answers = [[] for _ in flat_questions]
 index = 0
 
 # Loop through questions
@@ -70,27 +72,44 @@ while index < len(flat_questions):
     section, question = flat_questions[index]
     print(f"\nSection: {section}")
     print(f"Q{index + 1}/{len(flat_questions)}: {question}")
-    print(f"(Current Answer: {answers[index] if answers[index] else '[none]'})")
-    response = input("Your answer (or type '<', '>', or 'd'): ").strip()
-
-    if response.lower() == "<" and index > 0:
-        index -= 1
-    elif response.lower() == ">":
-        index += 1
-    elif response.lower() == "d":
-        break
-    else:
-        answers[index] = response
-        index += 1
+    if answers[index]:
+        print("Current Answers:")
+        for line in answers[index]:
+            print(f"  - {line}")
+    print("Enter each line of your answer. Type 'done' to finish. '<', '>', or 'd' for navigation.")
+    
+    input_lines = []
+    while True:
+        line = input("> ").strip()
+        if line.lower() == "<" and index > 0:
+            index -= 1
+            break
+        elif line.lower() == ">":
+            index += 1
+            break
+        elif line.lower() == "d":
+            index = len(flat_questions)
+            break
+        elif line.lower() == "done":
+            answers[index] = input_lines
+            index += 1
+            break
+        else:
+            input_lines.append(line)
 
 # Build output text
 output = ""
 last_section = None
-for (section, question), answer in zip(flat_questions, answers):
+for (section, question), answer_lines in zip(flat_questions, answers):
     if section != last_section:
         output += f"\n### {section}\n"
         last_section = section
-    output += f"- **{question}**\n  {answer if answer else '[No answer provided]'}\n"
+    output += f"- **{question}**\n"
+    if answer_lines:
+        for line in answer_lines:
+            output += f"  - {line}\n"
+    else:
+        output += "  [No answer provided]\n"
 
 # Save to text file
 with open(filename, "w", encoding="utf-8") as f:

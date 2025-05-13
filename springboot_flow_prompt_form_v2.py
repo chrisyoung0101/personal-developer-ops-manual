@@ -2,6 +2,7 @@
 import json
 import os
 import time
+import shutil
 
 print("""
 ────────────────────────────────────────────────────────────────────────────
@@ -24,25 +25,19 @@ BONUS:
 """)
 
 SESSION_FILE = "flow_progress.json"
-BACKUP_FILE = "flow_progress_backup.json"
+BACKUP_FILE = ""  # Will be set based on filename
 
 def pickle_man_animation():
-    frames = [
-        "🥒         ",
-        "  🥒       ",
-        "    🥒     ",
-        "      🥒   ",
-        "        🥒 ",
-        "          🥒"
-    ]
+    term_width = shutil.get_terminal_size((80, 20)).columns
+    max_steps = term_width - 3
     print("\nPickle Man is walking...\n")
     for _ in range(2):
-        for frame in frames:
-            print(f"\r{frame}", end="", flush=True)
-            time.sleep(0.2)
-    print("\nPickle Man is done!\n")
+        for i in range(max_steps):
+            print(" " * i + "🥒", end="\r", flush=True)
+            time.sleep(0.03)
+    print(" " * max_steps + "🥒\nPickle Man is done!\n")
 
-# Initialize
+# Resume or initialize session
 filename = ""
 index = 0
 answers = []
@@ -59,14 +54,16 @@ if os.path.exists(SESSION_FILE):
         index = session_data.get("index", 0)
         answers = session_data.get("answers", [])
     else:
-        os.rename(SESSION_FILE, BACKUP_FILE)
-        print(f"Previous session backed up as {BACKUP_FILE}")
         filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
+        if not filename.endswith(".txt"):
+            filename += ".txt"
+        BACKUP_FILE = filename.replace(".txt", "_session_backup.json")
+        os.rename(SESSION_FILE, BACKUP_FILE)
+        print(f"Previous session backed up as: {BACKUP_FILE}")
 else:
     filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
-
-if not filename.endswith(".txt"):
-    filename += ".txt"
+    if not filename.endswith(".txt"):
+        filename += ".txt"
 
 form_structure = {
     "Core Business Logic": [
@@ -103,6 +100,7 @@ if not answers:
 elif len(answers) < len(flat_questions):
     answers += [[] for _ in range(len(flat_questions) - len(answers))]
 
+# Main interaction loop
 while index < len(flat_questions):
     section, question = flat_questions[index]
     print(f"\nSection: {section}")
@@ -134,6 +132,7 @@ while index < len(flat_questions):
         else:
             input_lines.append(line)
 
+# Build and save final output
 output = ""
 last_section = None
 for (section, question), answer_lines in zip(flat_questions, answers):

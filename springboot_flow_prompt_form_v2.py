@@ -1,23 +1,23 @@
-
+# -*- coding: utf-8 -*-
 import json
 import os
 import time
 
 print("""
 ────────────────────────────────────────────────────────────────────────────
-🧠 Spring Boot Flow Documentation Helper (v6)
+Spring Boot Flow Documentation Helper (v6)
 ────────────────────────────────────────────────────────────────────────────
 
 This interactive script helps you document the flow of a Spring Boot service,
 step-by-step. Use it as your second brain for code walkthroughs and meetings.
 
-🟢 COMMANDS:
+COMMANDS:
   <     → Go to the previous question
   >     → Skip the current question
   d     → Done with the current question
   p     → Pause and save progress
 
-👾 BONUS:
+BONUS:
   Type 'pickle' when prompted to launch the Pickle Man animation
 
 ────────────────────────────────────────────────────────────────────────────
@@ -26,26 +26,27 @@ step-by-step. Use it as your second brain for code walkthroughs and meetings.
 SESSION_FILE = "flow_progress.json"
 BACKUP_FILE = "flow_progress_backup.json"
 
-# Show Pickle Man animation
 def pickle_man_animation():
     frames = [
-        r"🥒         ",
-        r"  🥒       ",
-        r"    🥒     ",
-        r"      🥒   ",
-        r"        🥒 ",
-        r"          🥒"
+        "🥒         ",
+        "  🥒       ",
+        "    🥒     ",
+        "      🥒   ",
+        "        🥒 ",
+        "          🥒"
     ]
-    print("🕺 Pickle Man is walking...
-")
+    print("\nPickle Man is walking...\n")
     for _ in range(2):
         for frame in frames:
-            print("\r" + frame, end="", flush=True)
+            print(f"\r{frame}", end="", flush=True)
             time.sleep(0.2)
-    print("\nPickle Man is done!
-")
+    print("\nPickle Man is done!\n")
 
-# Resume or backup session logic
+# Initialize
+filename = ""
+index = 0
+answers = []
+
 if os.path.exists(SESSION_FILE):
     resume = input("A saved session was found. Resume previous session? (y/n/pickle): ").strip().lower()
     if resume == "pickle":
@@ -54,23 +55,18 @@ if os.path.exists(SESSION_FILE):
     if resume == "y":
         with open(SESSION_FILE, "r", encoding="utf-8") as f:
             session_data = json.load(f)
-        filename = session_data["filename"]
-        index = session_data["index"]
-        answers = session_data["answers"]
+        filename = session_data.get("filename", "")
+        index = session_data.get("index", 0)
+        answers = session_data.get("answers", [])
     else:
         os.rename(SESSION_FILE, BACKUP_FILE)
         print(f"Previous session backed up as {BACKUP_FILE}")
         filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
-        if not filename.endswith(".txt"):
-            filename += ".txt"
-        index = 0
-        answers = []
 else:
     filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
-    if not filename.endswith(".txt"):
-        filename += ".txt"
-    index = 0
-    answers = []
+
+if not filename.endswith(".txt"):
+    filename += ".txt"
 
 form_structure = {
     "Core Business Logic": [
@@ -100,17 +96,13 @@ form_structure = {
     ]
 }
 
-flat_questions = []
-for section, qs in form_structure.items():
-    for q in qs:
-        flat_questions.append((section, q))
+flat_questions = [(section, q) for section, qs in form_structure.items() for q in qs]
 
 if not answers:
     answers = [[] for _ in flat_questions]
 elif len(answers) < len(flat_questions):
     answers += [[] for _ in range(len(flat_questions) - len(answers))]
 
-# Loop through questions
 while index < len(flat_questions):
     section, question = flat_questions[index]
     print(f"\nSection: {section}")
@@ -120,7 +112,7 @@ while index < len(flat_questions):
         for line in answers[index]:
             print(f"  - {line}")
     print("Enter each line of your answer. Use '<', '>', 'd', or 'p'.")
-    
+
     input_lines = []
     while True:
         line = input("> ").strip()
@@ -142,7 +134,6 @@ while index < len(flat_questions):
         else:
             input_lines.append(line)
 
-# Final output build
 output = ""
 last_section = None
 for (section, question), answer_lines in zip(flat_questions, answers):
@@ -156,11 +147,9 @@ for (section, question), answer_lines in zip(flat_questions, answers):
     else:
         output += "  [No answer provided]\n"
 
-# Save to text file
 with open(filename, "w", encoding="utf-8") as f:
     f.write(output)
 
-# Clean up session file
 if os.path.exists(SESSION_FILE):
     os.remove(SESSION_FILE)
 

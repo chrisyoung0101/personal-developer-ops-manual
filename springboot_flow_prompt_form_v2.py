@@ -1,38 +1,56 @@
 
 import json
 import os
+import time
 
 print("""
 ────────────────────────────────────────────────────────────────────────────
-🧠 Spring Boot Flow Documentation Helper
+🧠 Spring Boot Flow Documentation Helper (v6)
 ────────────────────────────────────────────────────────────────────────────
 
-This interactive script helps you document the full lifecycle of a Spring Boot
-service endpoint — from controller to service logic, external integrations,
-error handling, and unit tests.
+This interactive script helps you document the flow of a Spring Boot service,
+step-by-step. Use it as your second brain for code walkthroughs and meetings.
 
-Use it as a personal second brain to stay organized and answer questions
-confidently during meetings or code reviews.
-
-🟢 Instructions:
-- Answer each question to the best of your knowledge.
-- You can enter multiple bullet points. Press ENTER after each line.
-- Type 'done' on a new line when you're finished with a question.
-- Type 'pause' at any time to save your progress and exit.
-- Navigation:
+🟢 COMMANDS:
   <     → Go to the previous question
   >     → Skip the current question
-  d     → Finish early
+  d     → Done with the current question
+  p     → Pause and save progress
 
-Let's get started!
+👾 BONUS:
+  Type 'pickle' when prompted to launch the Pickle Man animation
+
 ────────────────────────────────────────────────────────────────────────────
 """)
 
 SESSION_FILE = "flow_progress.json"
+BACKUP_FILE = "flow_progress_backup.json"
 
-# Resume previous session if available
+# Show Pickle Man animation
+def pickle_man_animation():
+    frames = [
+        r"🥒         ",
+        r"  🥒       ",
+        r"    🥒     ",
+        r"      🥒   ",
+        r"        🥒 ",
+        r"          🥒"
+    ]
+    print("🕺 Pickle Man is walking...
+")
+    for _ in range(2):
+        for frame in frames:
+            print("\r" + frame, end="", flush=True)
+            time.sleep(0.2)
+    print("\nPickle Man is done!
+")
+
+# Resume or backup session logic
 if os.path.exists(SESSION_FILE):
-    resume = input("A saved session was found. Resume previous session? (y/n): ").strip().lower()
+    resume = input("A saved session was found. Resume previous session? (y/n/pickle): ").strip().lower()
+    if resume == "pickle":
+        pickle_man_animation()
+        resume = input("Resume saved session now? (y/n): ").strip().lower()
     if resume == "y":
         with open(SESSION_FILE, "r", encoding="utf-8") as f:
             session_data = json.load(f)
@@ -40,7 +58,8 @@ if os.path.exists(SESSION_FILE):
         index = session_data["index"]
         answers = session_data["answers"]
     else:
-        os.remove(SESSION_FILE)
+        os.rename(SESSION_FILE, BACKUP_FILE)
+        print(f"Previous session backed up as {BACKUP_FILE}")
         filename = input("What should the output .txt file be named? (e.g. order_flow.txt): ").strip()
         if not filename.endswith(".txt"):
             filename += ".txt"
@@ -86,7 +105,6 @@ for section, qs in form_structure.items():
     for q in qs:
         flat_questions.append((section, q))
 
-# Initialize answer storage if starting fresh
 if not answers:
     answers = [[] for _ in flat_questions]
 elif len(answers) < len(flat_questions):
@@ -101,7 +119,7 @@ while index < len(flat_questions):
         print("Current Answers:")
         for line in answers[index]:
             print(f"  - {line}")
-    print("Enter each line of your answer. Type 'done' to finish. '<', '>', 'd', or 'pause' to control navigation.")
+    print("Enter each line of your answer. Use '<', '>', 'd', or 'p'.")
     
     input_lines = []
     while True:
@@ -113,26 +131,18 @@ while index < len(flat_questions):
             index += 1
             break
         elif line.lower() == "d":
-            index = len(flat_questions)
-            break
-        elif line.lower() == "pause":
-            session_data = {
-                "filename": filename,
-                "index": index,
-                "answers": answers
-            }
-            with open(SESSION_FILE, "w", encoding="utf-8") as f:
-                json.dump(session_data, f, indent=2)
-            print(f"Session saved. You can resume later by running this script again.")
-            exit(0)
-        elif line.lower() == "done":
             answers[index] = input_lines
             index += 1
             break
+        elif line.lower() == "p":
+            with open(SESSION_FILE, "w", encoding="utf-8") as f:
+                json.dump({"filename": filename, "index": index, "answers": answers}, f, indent=2)
+            print(f"Session saved. You can resume later with: {SESSION_FILE}")
+            exit(0)
         else:
             input_lines.append(line)
 
-# Build output text
+# Final output build
 output = ""
 last_section = None
 for (section, question), answer_lines in zip(flat_questions, answers):
@@ -154,7 +164,5 @@ with open(filename, "w", encoding="utf-8") as f:
 if os.path.exists(SESSION_FILE):
     os.remove(SESSION_FILE)
 
-# Print final result
-print("\nCompleted Documentation:")
-print(output)
-print(f"\nSaved to: {filename}")
+print("\n✅ Completed Documentation")
+print(f"Saved to: {filename}")
